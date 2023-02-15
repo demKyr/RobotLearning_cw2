@@ -5,6 +5,8 @@ import numpy as np
 import graphics
 
 
+angles = [i for i in range(0,360,30)]
+
 # Define the Robot class
 class Robot:
 
@@ -25,19 +27,47 @@ class Robot:
         self.planning_horizon = 100
         self.needs_planning = True
         self.plan_timestep = 0
+        self.prev_state = np.array([np.inf, np.inf])
+        self.train_step_counter = 0 
 
     # Function to compute the next action, during the training phase.
     def next_action_training(self, state):
         # For now, just a random action. Try to do better than this!
-        next_action = self.random_action()
+        # next_action = self.random_action()
 
+        if(np.all(np.isclose(state, self.prev_state, atol=0.00005))):
+            print(state,self.prev_state)
+            reset = True
+            self.train_step_counter += 20 
+            print("RESEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEET")
+        else:
+            self.prev_state = state
+            reset = False
+            self.train_step_counter += 1
+        print(self.train_step_counter)
+
+
+        uncertainties = np.zeros(len(angles)) 
+        for i in range(len(uncertainties)):
+            pred_planning_state = state
+            action = self.convert_angle_to_action(np.deg2rad(angles[i]))
+            for j in range(10):
+                pred_planning_state, uncertainty = self.model.predict(pred_planning_state, action)
+            uncertainties[i] = uncertainty
+        next_action = self.convert_angle_to_action(np.deg2rad(angles[np.argmax(uncertainties)]))
+        
+
+
+        # print(angles)
         # angle = np.deg2rad(180)
         # action_x = self.max_action * np.cos(angle)
         # action_y = self.max_action * np.sin(angle)
         # next_action = np.array([action_x, action_y])
         # next_action = self.goal_state - self.state
 
-        reset = False
+
+
+        # reset = False
         return next_action, reset
 
     # Function to compute the next action, during the testing phase.
@@ -100,7 +130,7 @@ class Robot:
                 planned_states[i] = pred_planning_state
             # Create a path for these states, add it to the list of paths to be drawn.
             path = graphics.Path(planned_states, (255, 200, 0), 2, 0)
-            self.paths_to_draw.append(path)
+            # self.paths_to_draw.append(path)
             # COMPARE TO BEST PATH
             dist = np.sqrt((planned_states[-1][0] - self.goal_state[0])**2+(planned_states[-1][1] - self.goal_state[1])**2)
             if(dist < best_path_dist):
