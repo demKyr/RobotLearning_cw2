@@ -46,15 +46,17 @@ class Robot:
         # next_action = self.random_action()
 
         if(self.needs_planning):
-            # self.planned_actions = self.planning_random_shooting(self.planning_horizon)
-            self.planned_actions = self.planning_cross_entropy(self.planning_horizon, K = 0.03, N = 100)
+            # self.planned_actions = self.planning_random_shooting(state,self.planning_horizon)
+            self.planned_actions = self.planning_cross_entropy(state,self.planning_horizon, K = 0.03, N = 100)
             self.needs_planning = False
         
         if(self.plan_timestep < self.planning_horizon):
             next_action = self.planned_actions[self.plan_timestep]
             self.plan_timestep += 1
         else:
+            self.needs_planning = True
             next_action = np.array([0.0, 0.0])
+            self.plan_timestep = 0
 
         return next_action
 
@@ -73,7 +75,7 @@ class Robot:
 
 
     # CUSTOM FUNCTIONS
-    def planning_random_shooting(self, planning_horizon):
+    def planning_random_shooting(self, state, planning_horizon):
         best_path_dist = 9999
         best_planned_actions = np.zeros([planning_horizon, 2], dtype=np.float32)
         best_planned_states = np.zeros([planning_horizon, 2], dtype=np.float32)
@@ -83,7 +85,7 @@ class Robot:
             # Create an empty array to store the planned states.
             planned_states = np.zeros([planning_horizon, 2], dtype=np.float32)
             # Set the initial state in the planning to the robot's current state.
-            pred_planning_state = self.model.environment.state
+            pred_planning_state = state
             # Loop over the planning horizon.
             for i in range(planning_horizon):
                 # Choose a random action.
@@ -111,7 +113,7 @@ class Robot:
         return best_planned_actions
 
 
-    def planning_cross_entropy(self, planning_horizon, K = 0.10, N = 100):
+    def planning_cross_entropy(self, state, planning_horizon, K = 0.10, N = 100):
         best_planned_actions = np.zeros([planning_horizon, 2], dtype=np.float32)
         best_planned_states = np.zeros([planning_horizon, 2], dtype=np.float32)
         color = 250
@@ -129,7 +131,7 @@ class Robot:
                 # Create an empty array to store the planned states.
                 planned_states = np.zeros([planning_horizon, 2], dtype=np.float32)
                 # Set the initial state in the planning to the robot's current state.
-                pred_planning_state = self.model.environment.state
+                pred_planning_state = state
                 # Loop over the planning horizon.
                 angles = np.random.multivariate_normal(mean, cov)
                 for i in range(planning_horizon):
