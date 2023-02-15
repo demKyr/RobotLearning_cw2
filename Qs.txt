@@ -1,4 +1,5 @@
 ? planning (random shooting, cross entropy) only on testing
-? We can't import environment but model is already saved in self.model and has self.environment
-? Can we call model.predict(), if so what do we use for state parameter
-? How does the time count, it looks like time pauses for the calculations
+
+######## ? How does the time count, it looks like time pauses for the calculations
+######## ? We can't import environment but model is already saved in self.model and has self.environment
+######## ? Can we call model.predict(), if so what do we use for state parameter
