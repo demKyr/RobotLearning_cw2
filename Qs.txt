@@ -1,3 +1,4 @@
+? Said that level 2 is simple cross entropy that reaches target but simple cross entropy doesn't reach target
 ? planning (random shooting, cross entropy) only on testing
 
 ######## ? How does the time count, it looks like time pauses for the calculations

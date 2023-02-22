@@ -1,12 +1,13 @@
 GENERAL
-see slides
+# see slides
 
 TRAINING
 add info about the training_num_resets
 add info about the obstacle
-step counter
+# step counter
 test atol in isclose()
 
 TESTING
 change params of Cross Entropy
 Modify Cross Entropy to not only use euclidean (uncertainty perhaps)
+if near the target, go straight to it
