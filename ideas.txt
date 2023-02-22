@@ -11,3 +11,7 @@ TESTING
 change params of Cross Entropy
 Modify Cross Entropy to not only use euclidean (uncertainty perhaps)
 if near the target, go straight to it
+
+smoothing using momentum
+
+gets stuck after checkpoint 1 
