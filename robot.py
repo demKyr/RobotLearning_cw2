@@ -29,6 +29,7 @@ class Robot:
         self.plan_timestep = 0
         self.prev_state = np.array([np.inf, np.inf])
         self.train_step_counter = 0 
+        self.test_step_counter = 0
 
     # Function to compute the next action, during the training phase.
     def next_action_training(self, state):
@@ -36,36 +37,25 @@ class Robot:
         # next_action = self.random_action()
 
         if(np.all(np.isclose(state, self.prev_state, atol=0.00005))):
-            print(state,self.prev_state)
             reset = True
             self.train_step_counter += 20 
-            print("RESEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEET")
         else:
             self.prev_state = state
             reset = False
             self.train_step_counter += 1
-        print(self.train_step_counter)
+        # print(self.train_step_counter)
 
-
-        uncertainties = np.zeros(len(angles)) 
-        for i in range(len(uncertainties)):
-            pred_planning_state = state
-            action = self.convert_angle_to_action(np.deg2rad(angles[i]))
-            for j in range(10):
-                pred_planning_state, uncertainty = self.model.predict(pred_planning_state, action)
-            uncertainties[i] = uncertainty
-        next_action = self.convert_angle_to_action(np.deg2rad(angles[np.argmax(uncertainties)]))
+        if(self.train_step_counter < 500):
+            next_action = self.high_uncertainty_action(state)
+        else:
+            next_action = self.goal_action(state)
         
-
-
         # print(angles)
         # angle = np.deg2rad(180)
         # action_x = self.max_action * np.cos(angle)
         # action_y = self.max_action * np.sin(angle)
         # next_action = np.array([action_x, action_y])
         # next_action = self.goal_state - self.state
-
-
 
         # reset = False
         return next_action, reset
@@ -74,13 +64,16 @@ class Robot:
     def next_action_testing(self, state):
         # For now, just a random action. Try to do better than this!
         # next_action = self.random_action()
+        self.test_step_counter += 1
 
         if(self.needs_planning):
             # self.planned_actions = self.planning_random_shooting(state,self.planning_horizon)
             self.planned_actions = self.planning_cross_entropy(state,self.planning_horizon, K = 0.03, N = 100)
             self.needs_planning = False
         
-        if(self.plan_timestep < self.planning_horizon):
+        if(self.test_step_counter > 160):
+            next_action = self.goal_action(state)
+        elif(self.plan_timestep < self.planning_horizon):
             next_action = self.planned_actions[self.plan_timestep]
             self.plan_timestep += 1
         else:
@@ -103,8 +96,33 @@ class Robot:
         self.model.update_uncertainty(state, action)
 
 
-
     # CUSTOM FUNCTIONS
+
+    def dist_from_goal(self,state):
+        return np.linalg.norm(self.goal_state - state)
+
+    def high_uncertainty_action(self,state):
+        uncertainties = np.zeros(len(angles)) 
+        for i in range(len(uncertainties)):
+            pred_planning_state = state
+            action = self.convert_angle_to_action(np.deg2rad(angles[i]))
+            for j in range(10):
+                pred_planning_state, uncertainty = self.model.predict(pred_planning_state, action)
+            uncertainties[i] = uncertainty
+        return self.convert_angle_to_action(np.deg2rad(angles[np.argmax(uncertainties)]))
+
+    
+    def goal_action(self,state):
+        dists = np.zeros(len(angles)) 
+        for i in range(len(dists)):
+            pred_planning_state = state
+            action = self.convert_angle_to_action(np.deg2rad(angles[i]))
+            for j in range(10):
+                pred_planning_state, _ = self.model.predict(pred_planning_state, action)
+            dists[i] = self.dist_from_goal(pred_planning_state)
+        return self.convert_angle_to_action(np.deg2rad(angles[np.argmin(dists)]))
+
+
     def planning_random_shooting(self, state, planning_horizon):
         best_path_dist = 9999
         best_planned_actions = np.zeros([planning_horizon, 2], dtype=np.float32)
